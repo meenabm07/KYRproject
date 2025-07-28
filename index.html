@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Know Your Rights</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url('https://botnation.ai/site/wp-content/uploads/2024/01/chatbot-juridique-1200x800.webp'); /* Assuming image is in an 'images' folder */
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 0;
+            background-color: #e0f2f7;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        #chatbox {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 18px;
+            max-width: 75%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .user {
+            background-color: #e3f2fd;
+            color: #1e3a8a;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot {
+            background-color: #f0f0f0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-indicator {
+            color: #777;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #d0d7de;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #clearButton {
+            background-color: #dc3545; /* Red color for clear */
+            margin-left: 10px;
+        }
+
+        #clearButton:hover {
+            background-color: #c82333;
+        }
+
+        #historyButton {
+            background-color: #ffc107; /* Yellow/Amber for history */
+            color: #212529; /* Dark text */
+            margin-left: 10px;
+        }
+
+        #historyButton:hover {
+            background-color: #e0a800;
+        }
+
+        #historyBox {
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none; /* Initially hidden */
+            font-size: 0.9em;
+        }
+
+        .history-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px dotted #eee;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KY Rights Chatbot 🤖</h1>
+        <div id="chatbox"></div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your question...">
+            <button onclick="sendMessage()">Send</button>
+            <button id="clearButton" onclick="clearChat()">Clear</button>
+            <button id="historyButton" onclick="toggleHistory()">History</button>
+        </div>
+        <div id="historyBox">
+            <b>Chat History:</b>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = [];
+        const historyBox = document.getElementById("historyBox");
+        const chatBoxElement = document.getElementById("chatbox"); // Get a reference to the chatbox
+
+        async function sendMessage() {
+            const userInput = document.getElementById("userInput").value;
+
+            if (!userInput.trim()) return;
+
+            // Add user message to history and display
+            chatHistory.push({ role: "user", content: userInput });
+            displayMessage("user", userInput);
+            updateHistoryDisplay();
+            document.getElementById("userInput").value = "";
+
+            // Show typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.classList.add('message', 'bot', 'typing-indicator');
+            typingIndicator.innerHTML = '<i>Bot is typing...</i>';
+            chatBoxElement.appendChild(typingIndicator);
+            chatBoxElement.scrollTop = chatBoxElement.scrollHeight;
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userInput })
+                });
+
+                const data = await response.json();
+                typingIndicator.remove();
+
+                // Add bot message to history and display
+                chatHistory.push({ role: "bot", content: data.reply });
+                displayMessage("bot", data.reply);
+                updateHistoryDisplay();
+            } catch (error) {
+                typingIndicator.remove();
+                displayMessage("bot", "Sorry, something went wrong.");
+                chatHistory.push({ role: "bot", content: "Sorry, something went wrong." });
+                updateHistoryDisplay();
+            }
+        }
+
+        function displayMessage(sender, message) {
+            chatBoxElement.innerHTML += <div class="message ${sender}"><b>${sender === 'user' ? 'You' : 'Bot'}:</b> ${message}</div>;
+            chatBoxElement.scrollTop = chatBoxElement.scrollHeight;
+        }
+
+        function clearChat() {
+            chatBoxElement.innerHTML = ""; // Only clear the visible chatbox
+            // Note: We are NOT clearing the chatHistory array here
+        }
+
+        function updateHistoryDisplay() {
+            historyBox.innerHTML = '<b>Chat History:</b>';
+            chatHistory.forEach(item => {
+                const sender = item.role === 'user' ? 'You' : 'Bot';
+                historyBox.innerHTML += <div class="history-item">${sender}: ${item.content}</div>;
+            });
+            historyBox.scrollTop = historyBox.scrollHeight;
+        }
+
+        function toggleHistory() {
+            if (historyBox.style.display === "none") {
+                historyBox.style.display = "block";
+            } else {
+                historyBox.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
